@@ -30,7 +30,12 @@ import {
   Type,
   Smartphone,
   Globe,
-  Monitor
+  Monitor,
+  Mail,
+  Shirt,
+  Palette as PaletteIcon,
+  Moon,
+  Sun
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { generateBranding, extractPalette, analyzeBrand, GenerationResult, BrandAnalysis } from './services/gemini';
@@ -47,7 +52,7 @@ declare global {
 
 interface BrandAsset {
   id: string;
-  type: 'icon' | 'variation' | 'business-card' | 'social-banner' | 'letterhead' | 'instagram' | 'twitter' | 'linkedin' | 'website-mockup';
+  type: 'icon' | 'variation' | 'business-card' | 'social-banner' | 'letterhead' | 'instagram' | 'twitter' | 'linkedin' | 'website-mockup' | 'email-signature' | 'merchandise-mockup';
   url: string;
   label: string;
   status: 'idle' | 'loading' | 'completed' | 'error';
@@ -91,6 +96,7 @@ export default function App() {
   const [showSaved, setShowSaved] = useState(false);
   const [editingPromptId, setEditingPromptId] = useState<string | null>(null);
   const [editingNameId, setEditingNameId] = useState<string | null>(null);
+  const [editingColorIndex, setEditingColorIndex] = useState<number | null>(null);
   const [previewAssetId, setPreviewAssetId] = useState<string | null>(null);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isInstallable, setIsInstallable] = useState(false);
@@ -118,6 +124,19 @@ export default function App() {
     }
     setDeferredPrompt(null);
   };
+
+  useEffect(() => {
+    if (brandAnalysis) {
+      const fonts = [brandAnalysis.typography.primary, brandAnalysis.typography.secondary];
+      const link = document.createElement('link');
+      link.href = `https://fonts.googleapis.com/css2?family=${fonts.map(f => f.replace(/\s+/g, '+')).join('&family=')}&display=swap`;
+      link.rel = 'stylesheet';
+      document.head.appendChild(link);
+      return () => {
+        document.head.removeChild(link);
+      };
+    }
+  }, [brandAnalysis]);
 
   // Persistence
   useEffect(() => {
@@ -230,7 +249,9 @@ export default function App() {
       instagram: 'Instagram Icon',
       twitter: 'Twitter Icon',
       linkedin: 'LinkedIn Icon',
-      'website-mockup': 'Website Mockup'
+      'website-mockup': 'Website Mockup',
+      'email-signature': 'Email Signature',
+      'merchandise-mockup': 'Merchandise Mockup'
     };
     const newAsset: BrandAsset = {
       id: crypto.randomUUID(),
@@ -374,6 +395,14 @@ export default function App() {
     navigator.clipboard.writeText(css);
   };
 
+  const updateColor = (index: number, newColor: string) => {
+    const newPalette = [...palette];
+    newPalette[index] = newColor;
+    setPalette(newPalette);
+    setEditingColorIndex(null);
+    pushToHistory({ ...getCurrentState(), palette: newPalette });
+  };
+
   const getIcon = (type: string) => {
     switch (type) {
       case 'icon': return <ImageIcon className="w-5 h-5" />;
@@ -385,6 +414,8 @@ export default function App() {
       case 'twitter': return <Twitter className="w-5 h-5" />;
       case 'linkedin': return <Linkedin className="w-5 h-5" />;
       case 'website-mockup': return <Monitor className="w-5 h-5" />;
+      case 'email-signature': return <Mail className="w-5 h-5" />;
+      case 'merchandise-mockup': return <Shirt className="w-5 h-5" />;
       default: return <ImageIcon className="w-5 h-5" />;
     }
   };
@@ -605,7 +636,7 @@ export default function App() {
                     </div>
                     {brandAnalysis && (
                       <div className="space-y-4">
-                        <p className="text-xl font-serif italic text-emerald-400">"{brandAnalysis.tagline}"</p>
+                        <p className="text-xl italic text-emerald-400" style={{ fontFamily: brandAnalysis.typography.primary }}>"{brandAnalysis.tagline}"</p>
                         <div className="flex flex-wrap gap-2">
                           {brandAnalysis.personality.map(p => (
                             <span key={p} className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] font-bold uppercase tracking-widest">{p}</span>
@@ -771,12 +802,29 @@ export default function App() {
                       className="group relative"
                     >
                       <div 
-                        className="w-10 h-10 rounded-xl border border-white/10 shadow-lg cursor-pointer transition-transform hover:scale-110 active:scale-95"
+                        className="w-10 h-10 rounded-xl border border-white/10 shadow-lg cursor-pointer transition-transform hover:scale-110 active:scale-95 overflow-hidden"
                         style={{ backgroundColor: color }}
-                        onClick={() => navigator.clipboard.writeText(color)}
-                        title={`Copy ${color}`}
+                        onClick={() => setEditingColorIndex(idx)}
+                        title={`Edit ${color}`}
                       />
-                      <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] font-mono text-white/20 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                      {editingColorIndex === idx && (
+                        <div className="absolute top-full left-0 mt-2 z-50 bg-[#121214] border border-white/10 rounded-xl p-2 shadow-2xl">
+                          <input 
+                            type="color" 
+                            defaultValue={color}
+                            className="w-8 h-8 bg-transparent border-none cursor-pointer"
+                            onBlur={(e) => updateColor(idx, e.target.value)}
+                            onChange={(e) => updateColor(idx, e.target.value)}
+                          />
+                        </div>
+                      )}
+                      <span 
+                        className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] font-mono text-white/20 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap cursor-pointer hover:text-emerald-400"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigator.clipboard.writeText(color);
+                        }}
+                      >
                         {color}
                       </span>
                     </motion.div>
@@ -827,11 +875,11 @@ export default function App() {
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-1">
                         <p className="text-[10px] text-white/40 uppercase">Primary</p>
-                        <p className="text-sm font-bold">{brandAnalysis.typography.primary}</p>
+                        <p className="text-sm font-bold" style={{ fontFamily: brandAnalysis.typography.primary }}>{brandAnalysis.typography.primary}</p>
                       </div>
                       <div className="space-y-1">
                         <p className="text-[10px] text-white/40 uppercase">Secondary</p>
-                        <p className="text-sm font-bold">{brandAnalysis.typography.secondary}</p>
+                        <p className="text-sm font-bold" style={{ fontFamily: brandAnalysis.typography.secondary }}>{brandAnalysis.typography.secondary}</p>
                       </div>
                     </div>
                     <p className="text-[11px] text-white/40 leading-relaxed italic">{brandAnalysis.typography.description}</p>
@@ -874,6 +922,14 @@ export default function App() {
                       <button onClick={() => addAsset('website-mockup')} className="w-full text-left px-4 py-2 hover:bg-white/5 rounded-xl text-xs font-medium flex items-center gap-3">
                         <Globe className="w-3 h-3 text-indigo-400" />
                         Website Mockup
+                      </button>
+                      <button onClick={() => addAsset('email-signature')} className="w-full text-left px-4 py-2 hover:bg-white/5 rounded-xl text-xs font-medium flex items-center gap-3">
+                        <Mail className="w-3 h-3 text-yellow-400" />
+                        Email Signature
+                      </button>
+                      <button onClick={() => addAsset('merchandise-mockup')} className="w-full text-left px-4 py-2 hover:bg-white/5 rounded-xl text-xs font-medium flex items-center gap-3">
+                        <Shirt className="w-3 h-3 text-purple-400" />
+                        Merchandise
                       </button>
                     </div>
                   </div>

@@ -18,7 +18,7 @@ export interface BrandAnalysis {
 export async function generateBranding(
   base64Image: string,
   mimeType: string,
-  type: 'icon' | 'variation' | 'business-card' | 'social-banner' | 'letterhead' | 'instagram' | 'twitter' | 'linkedin' | 'website-mockup',
+  type: 'icon' | 'variation' | 'business-card' | 'social-banner' | 'letterhead' | 'instagram' | 'twitter' | 'linkedin' | 'website-mockup' | 'email-signature' | 'merchandise-mockup',
   customPrompt?: string
 ): Promise<GenerationResult> {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || process.env.GEMINI_API_KEY || "" });
@@ -32,7 +32,9 @@ export async function generateBranding(
     instagram: "Create a vibrant, high-quality Instagram profile icon using this logo. Modern, clean, optimized for circular display, 4k detail.",
     twitter: "Create a professional Twitter profile icon using this logo. Clean, tech-focused, optimized for circular display, 4k detail.",
     linkedin: "Create a professional, corporate LinkedIn profile icon using this logo. High-end, clean, optimized for circular display, 4k detail.",
-    'website-mockup': "Design a high-end, modern SaaS website landing page mockup using this logo and branding. Show a hero section with clean typography, a call-to-action button, and a professional layout. 4k resolution, photorealistic web design."
+    'website-mockup': "Design a high-end, modern SaaS website landing page mockup using this logo and branding. Show a hero section with clean typography, a call-to-action button, and a professional layout. 4k resolution, photorealistic web design.",
+    'email-signature': "Design a professional, elegant email signature mockup using this logo. Include placeholders for name, title, and contact info. Clean, modern, high-resolution graphic.",
+    'merchandise-mockup': "Create a high-end merchandise mockup (like a premium t-shirt or hoodie) featuring this logo. Professional product photography style, clean aesthetic, 4k resolution."
   };
 
   const finalPrompt = customPrompt || defaultPrompts[type];
